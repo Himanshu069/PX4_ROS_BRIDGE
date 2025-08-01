@@ -1,1 +1,1 @@
-ROS2 package to read PX4 datas and republish them to suitable formats for ROS@
+ROS2 package to read PX4 datas and republish them to suitable formats for ROS2
