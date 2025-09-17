@@ -23,7 +23,7 @@ class PX4ToOdomBridge(Node):
 
         self.subscription = self.create_subscription(
             VehicleOdometry,
-            '/px4_1/fmu/out/vehicle_odometry',
+            '/fmu/out/vehicle_odometry',
             self.odom_callback,
             qos_profile
         )
@@ -40,38 +40,38 @@ class PX4ToOdomBridge(Node):
         odom_msg.child_frame_id = 'base_link'
 
         # Position and orientation
-        odom_msg.pose.pose.position.x = msg.position[0]
-        odom_msg.pose.pose.position.y = msg.position[1]
-        odom_msg.pose.pose.position.z = msg.position[2]
-        odom_msg.pose.pose.orientation.x = msg.q[0]
-        odom_msg.pose.pose.orientation.y = msg.q[1]
-        odom_msg.pose.pose.orientation.z = msg.q[2]
-        odom_msg.pose.pose.orientation.w = msg.q[3]
+        odom_msg.pose.pose.position.x = float(msg.position[0])
+        odom_msg.pose.pose.position.y = float(msg.position[1])
+        odom_msg.pose.pose.position.z = float(msg.position[2])
+        odom_msg.pose.pose.orientation.x = float(msg.q[0])
+        odom_msg.pose.pose.orientation.y = float(msg.q[1])
+        odom_msg.pose.pose.orientation.z = float(msg.q[2])
+        odom_msg.pose.pose.orientation.w = float(msg.q[3])
 
         # Pose covariance (row-major)
         odom_msg.pose.covariance = [
-            msg.position_variance[0], 0, 0, 0, 0, 0,
-            0, msg.position_variance[1], 0, 0, 0, 0,
-            0, 0, msg.position_variance[2], 0, 0, 0,
-            0, 0, 0, msg.orientation_variance[0], 0, 0,
-            0, 0, 0, 0, msg.orientation_variance[1], 0,
-            0, 0, 0, 0, 0, msg.orientation_variance[2]
+            float(msg.position_variance[0]), 0, 0, 0, 0, 0,
+            0, float(msg.position_variance[1]), 0, 0, 0, 0,
+            0, 0, float(msg.position_variance[2]), 0, 0, 0,
+            0, 0, 0, float(msg.orientation_variance[0]), 0, 0,
+            0, 0, 0, 0, float(msg.orientation_variance[1]), 0,
+            0, 0, 0, 0, 0, float(msg.orientation_variance[2])
         ]
 
         # Linear and angular velocity
-        odom_msg.twist.twist.linear.x = msg.velocity[0]
-        odom_msg.twist.twist.linear.y = msg.velocity[1]
-        odom_msg.twist.twist.linear.z = msg.velocity[2]
+        odom_msg.twist.twist.linear.x = float(msg.velocity[0])
+        odom_msg.twist.twist.linear.y = float(msg.velocity[1])
+        odom_msg.twist.twist.linear.z = float(msg.velocity[2])
 
-        odom_msg.twist.twist.angular.x = msg.angular_velocity[0]
-        odom_msg.twist.twist.angular.y = msg.angular_velocity[1]
-        odom_msg.twist.twist.angular.z = msg.angular_velocity[2]
+        odom_msg.twist.twist.angular.x = float(msg.angular_velocity[0])
+        odom_msg.twist.twist.angular.y = float(msg.angular_velocity[1])
+        odom_msg.twist.twist.angular.z = float(msg.angular_velocity[2])
 
         # Velocity covariance (same as above)
         odom_msg.twist.covariance = [
-            msg.velocity_variance[0], 0, 0, 0, 0, 0,
-            0, msg.velocity_variance[1], 0, 0, 0, 0,
-            0, 0, msg.velocity_variance[2], 0, 0, 0,
+            float(msg.velocity_variance[0]), 0, 0, 0, 0, 0,
+            0, float(msg.velocity_variance[1]), 0, 0, 0, 0,
+            0, 0, float(msg.velocity_variance[2]), 0, 0, 0,
             0, 0, 0, 1e-6, 0, 0,
             0, 0, 0, 0, 1e-6, 0,
             0, 0, 0, 0, 0, 1e-6

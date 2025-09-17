@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
 from px4_msgs.msg import SensorCombined
@@ -14,7 +15,7 @@ class PX4IMUBridge(Node):
             depth=10
         )
         self.sub = self.create_subscription(SensorCombined,
-                                            '/px4_1/fmu/out/sensor_combined',
+                                            '/fmu/out/sensor_combined',
                                             self.callback, qos_profile )
         self.pub = self.create_publisher(Imu, '/imu/data', qos_profile)
 
@@ -23,7 +24,7 @@ class PX4IMUBridge(Node):
         # Timestamp (approximate)
         now = self.get_clock().now().to_msg()
         imu_msg.header.stamp = now
-        imu_msg.header.frame_id = "x500_depth_1/OakD-Lite/base_link/StereoOV7251"  # change as needed (e.g. imu_link)
+        imu_msg.header.frame_id = "x500_depth_0/camera_link/StereoOV7251" 
 
 
         imu_msg.angular_velocity.x = float(msg.gyro_rad[0])
