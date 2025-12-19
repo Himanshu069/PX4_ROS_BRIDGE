@@ -14,17 +14,36 @@ class PX4IMUBridge(Node):
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
             depth=10
         )
+
+        self.declare_parameter('px4_ns', '')
+        self.declare_parameter('vehicle_ns', 'x500_drone_0')
+
+        px4_ns = self.get_parameter('px4_ns').get_parameter_value().string_value
+        vehicle_ns = self.get_parameter('vehicle_ns').get_parameter_value().string_value
+        
+        px4_topic = f'/{px4_ns}/fmu/out/sensor_combined'
+        imu_topic = f'/{vehicle_ns}/imu/data'
+
         self.sub = self.create_subscription(SensorCombined,
-                                            '/fmu/out/sensor_combined',
+                                            px4_topic,
                                             self.callback, qos_profile )
-        self.pub = self.create_publisher(Imu, '/imu/data', qos_profile)
+        self.pub = self.create_publisher(
+            Imu,
+            imu_topic,
+            qos_profile
+        )
+        self.frame_id = f"{vehicle_ns}/camera_link/StereoOV7251"
+
+        self.get_logger().info(f"Subscribed to: {px4_topic}")
+        self.get_logger().info(f"Publishing to: {imu_topic}")
+        self.get_logger().info(f"Frame ID: {self.frame_id}")
 
     def callback(self, msg):
         imu_msg = Imu()
         # Timestamp (approximate)
         now = self.get_clock().now().to_msg()
         imu_msg.header.stamp = now
-        imu_msg.header.frame_id = "x500_depth_0/camera_link/StereoOV7251" 
+        imu_msg.header.frame_id = self.frame_id
 
 
         imu_msg.angular_velocity.x = float(msg.gyro_rad[0])

@@ -14,6 +14,11 @@ class PX4ToOdomBridge(Node):
     def __init__(self):
         super().__init__('px4_to_odom_bridge')
 
+        self.declare_parameter('px4_ns', '')
+        self.declare_parameter('vehicle_ns', 'x500_drone_0')
+
+        px4_ns = self.get_parameter('px4_ns').get_parameter_value().string_value
+        vehicle_ns = self.get_parameter('vehicle_ns').get_parameter_value().string_value
         # Create a custom QoS profile to match PX4's publisher
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,  # Match PX4's default
@@ -21,23 +26,37 @@ class PX4ToOdomBridge(Node):
             depth=10
         )
 
+        px4_topic = (
+            f'/{px4_ns}/fmu/out/vehicle_odometry'
+            if px4_ns else
+            '/fmu/out/vehicle_odometry'
+        )
+
+        odom_topic = f'/{vehicle_ns}/odom'
+        
         self.subscription = self.create_subscription(
             VehicleOdometry,
-            '/fmu/out/vehicle_odometry',
+            px4_topic,
             self.odom_callback,
             qos_profile
         )
 
-        self.publisher = self.create_publisher(Odometry, '/odom', 10)
-        self.get_logger().info('PX4 VehicleOdometry -> /odom bridge started')
+        self.publisher = self.create_publisher(Odometry, odom_topic, 10)
+        self.odom_frame = f'{vehicle_ns}/odom'
+        self.base_frame = f'{vehicle_ns}/base_link'
+
+        self.get_logger().info(f"Subscribed to: {px4_topic}")
+        self.get_logger().info(f"Publishing to:  {odom_topic}")
+        self.get_logger().info(f"odom frame:     {self.odom_frame}")
+        self.get_logger().info(f"base frame:     {self.base_frame}")
 
     def odom_callback(self, msg: VehicleOdometry):
         odom_msg = Odometry()
 
         # Header
         odom_msg.header.stamp = self.get_clock().now().to_msg()
-        odom_msg.header.frame_id = 'odom'
-        odom_msg.child_frame_id = 'base_link'
+        odom_msg.header.frame_id = self.odom_frame
+        odom_msg.child_frame_id = self.base_frame
 
         # Position and orientation
         odom_msg.pose.pose.position.x = float(msg.position[0])
