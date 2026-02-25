@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from px4_msgs.msg import SensorCombined
+from px4_msgs.msg import SensorCombined, VehicleAttitude
 from sensor_msgs.msg import Imu
 from builtin_interfaces.msg import Time
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
@@ -14,35 +14,57 @@ class PX4IMUBridge(Node):
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
             depth=10
         )
+        
+        pub_qos = QoSProfile(
+             reliability=ReliabilityPolicy.RELIABLE,
+             durability=DurabilityPolicy.VOLATILE,
+             depth=10
+        )
 
         self.declare_parameter('px4_ns', '')
         self.declare_parameter('vehicle_ns', 'x500_drone_0')
 
         px4_ns = self.get_parameter('px4_ns').get_parameter_value().string_value
         vehicle_ns = self.get_parameter('vehicle_ns').get_parameter_value().string_value
-        
-        px4_topic = f'/{px4_ns}/fmu/out/sensor_combined'
+       
+        if px4_ns:
+            px4_topic = f'/{px4_ns}/fmu/out/sensor_combined'
+        else:
+            px4_topic = '/fmu/out/sensor_combined'
         imu_topic = f'/{vehicle_ns}/imu/data'
-
         self.sub = self.create_subscription(SensorCombined,
                                             px4_topic,
                                             self.callback, qos_profile )
         self.pub = self.create_publisher(
             Imu,
             imu_topic,
-            qos_profile
+            pub_qos
         )
+        self.attitude_sub = self.create_subscription(
+                VehicleAttitude,
+                '/fmu/out/vehicle_attitude',
+                self.attitude_callback,
+                qos_profile
+        )
+        self.latest_attitude = None
         self.frame_id = f"{vehicle_ns}/camera_link/StereoOV7251"
 
         self.get_logger().info(f"Subscribed to: {px4_topic}")
         self.get_logger().info(f"Publishing to: {imu_topic}")
         self.get_logger().info(f"Frame ID: {self.frame_id}")
 
+    def attitude_callback(self,msg):
+        self.latest_attitude = msg
+
     def callback(self, msg):
         imu_msg = Imu()
         # Timestamp (approximate)
-        now = self.get_clock().now().to_msg()
-        imu_msg.header.stamp = now
+        #now = self.get_clock().now().to_msg()
+        #imu_msg.header.stamp = now
+        stamp_sec = msg.timestamp // 1_000_000
+        stamp_nsec = (msg.timestamp % 1_000_000) * 1000
+        imu_msg.header.stamp.sec = int(stamp_sec)
+        imu_msg.header.stamp.nanosec = int(stamp_nsec)
         imu_msg.header.frame_id = self.frame_id
 
 
@@ -53,9 +75,18 @@ class PX4IMUBridge(Node):
         imu_msg.linear_acceleration.x = float(msg.accelerometer_m_s2[0])
         imu_msg.linear_acceleration.y = float(msg.accelerometer_m_s2[1])
         imu_msg.linear_acceleration.z = float(msg.accelerometer_m_s2[2])
-
-        # No orientation data in SensorCombined → leave orientation unset (NaNs)
-        imu_msg.orientation_covariance[0] = -1  # marks "no orientation estimate"
+        
+        if self.latest_attitude is not None:
+            q = self.latest_attitude.q
+            imu_msg.orientation.w = float(q[0])
+            imu_msg.orientation.x = float(q[1])
+            imu_msg.orientation.y = float(q[2])
+            imu_msg.orientation.z = float(q[3])
+            imu_msg.orientation_covariance[0] = 0.01
+            imu_msg.orientation_covariance[4] = 0.01
+            imu_msg.orientation_covariance[8] = 0.01
+        else:
+            imu_msg.orientation_covariance[0] = -1  # marks "no orientation estimate"
 
         self.pub.publish(imu_msg)
 
