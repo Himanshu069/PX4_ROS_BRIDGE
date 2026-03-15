@@ -47,7 +47,7 @@ class PX4IMUBridge(Node):
                 qos_profile
         )
         self.latest_attitude = None
-        self.frame_id = f"{vehicle_ns}/camera_link/StereoOV7251"
+        self.frame_id = f"{vehicle_ns}/base_link/imu_sensor"
 
         self.get_logger().info(f"Subscribed to: {px4_topic}")
         self.get_logger().info(f"Publishing to: {imu_topic}")
