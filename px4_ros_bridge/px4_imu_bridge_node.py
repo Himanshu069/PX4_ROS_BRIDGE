@@ -28,7 +28,7 @@ class PX4IMUBridge(Node):
         vehicle_ns = self.get_parameter('vehicle_ns').get_parameter_value().string_value
        
         if px4_ns:
-            px4_topic = f'/{px4_ns}/fmu/out/sensor_combined'
+            px4_topic = '{px4_ns}/fmu/out/sensor_combined'
         else:
             px4_topic = '/fmu/out/sensor_combined'
         imu_topic = f'/{vehicle_ns}/imu/data_raw'
@@ -47,7 +47,7 @@ class PX4IMUBridge(Node):
                 qos_profile
         )
         self.latest_attitude = None
-        self.frame_id = f"{vehicle_ns}/base_link/imu_sensor"
+        self.frame_id = f"{vehicle_ns}/imu_sensor"
 
         self.get_logger().info(f"Subscribed to: {px4_topic}")
         self.get_logger().info(f"Publishing to: {imu_topic}")
