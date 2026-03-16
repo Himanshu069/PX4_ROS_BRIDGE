@@ -31,7 +31,7 @@ class PX4IMUBridge(Node):
             px4_topic = f'/{px4_ns}/fmu/out/sensor_combined'
         else:
             px4_topic = '/fmu/out/sensor_combined'
-        imu_topic = f'/{vehicle_ns}/imu/data'
+        imu_topic = f'/{vehicle_ns}/imu/data_raw'
         self.sub = self.create_subscription(SensorCombined,
                                             px4_topic,
                                             self.callback, qos_profile )
