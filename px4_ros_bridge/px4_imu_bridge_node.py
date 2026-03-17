@@ -59,22 +59,22 @@ class PX4IMUBridge(Node):
     def callback(self, msg):
         imu_msg = Imu()
         # Timestamp (approximate)
-        #now = self.get_clock().now().to_msg()
+        imu_msg.header.stamp = self.get_clock().now().to_msg()
         #imu_msg.header.stamp = now
-        stamp_sec = msg.timestamp // 1_000_000
-        stamp_nsec = (msg.timestamp % 1_000_000) * 1000
-        imu_msg.header.stamp.sec = int(stamp_sec)
-        imu_msg.header.stamp.nanosec = int(stamp_nsec)
+       # stamp_sec = msg.timestamp // 1_000_000
+       # stamp_nsec = (msg.timestamp % 1_000_000) * 1000
+       # imu_msg.header.stamp.sec = int(stamp_sec)
+       # imu_msg.header.stamp.nanosec = int(stamp_nsec)
         imu_msg.header.frame_id = self.frame_id
 
 
         imu_msg.angular_velocity.x = float(msg.gyro_rad[0])
-        imu_msg.angular_velocity.y = float(msg.gyro_rad[1])
-        imu_msg.angular_velocity.z = float(msg.gyro_rad[2])
+        imu_msg.angular_velocity.y = -float(msg.gyro_rad[1])
+        imu_msg.angular_velocity.z = -float(msg.gyro_rad[2])
 
         imu_msg.linear_acceleration.x = float(msg.accelerometer_m_s2[0])
-        imu_msg.linear_acceleration.y = float(msg.accelerometer_m_s2[1])
-        imu_msg.linear_acceleration.z = float(msg.accelerometer_m_s2[2])
+        imu_msg.linear_acceleration.y = -float(msg.accelerometer_m_s2[1])
+        imu_msg.linear_acceleration.z = -float(msg.accelerometer_m_s2[2])
         
         if self.latest_attitude is not None:
             q = self.latest_attitude.q
