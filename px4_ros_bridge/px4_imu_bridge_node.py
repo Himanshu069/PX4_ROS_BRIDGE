@@ -5,6 +5,7 @@ from px4_msgs.msg import SensorCombined, VehicleAttitude
 from sensor_msgs.msg import Imu
 from builtin_interfaces.msg import Time
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+import math
 
 class PX4IMUBridge(Node):
     def __init__(self):
@@ -76,12 +77,12 @@ class PX4IMUBridge(Node):
         imu_msg.header.frame_id = self.frame_id
 
 
-        imu_msg.angular_velocity.x = float(msg.gyro_rad[0])
-        imu_msg.angular_velocity.y = -float(msg.gyro_rad[1])
+        imu_msg.angular_velocity.x = float(msg.gyro_rad[1])
+        imu_msg.angular_velocity.y = -float(msg.gyro_rad[0])
         imu_msg.angular_velocity.z = -float(msg.gyro_rad[2])
 
-        imu_msg.linear_acceleration.x = float(msg.accelerometer_m_s2[0])
-        imu_msg.linear_acceleration.y = -float(msg.accelerometer_m_s2[1])
+        imu_msg.linear_acceleration.x = float(msg.accelerometer_m_s2[1])
+        imu_msg.linear_acceleration.y = -float(msg.accelerometer_m_s2[0])
         imu_msg.linear_acceleration.z = -float(msg.accelerometer_m_s2[2])
         
         gv = self.gyro_var
@@ -100,10 +101,14 @@ class PX4IMUBridge(Node):
 
         if self.latest_attitude is not None:
             q = self.latest_attitude.q
-            imu_msg.orientation.w = float(q[0])
-            imu_msg.orientation.x = float(q[1])
-            imu_msg.orientation.y = float(q[2])
-            imu_msg.orientation.z = float(q[3])
+            w_ned = float(q[0])
+            x_ned = float(q[1])
+            y_ned = float(q[2])
+            z_ned = float(q[3])
+            imu_msg.orientation.w =  w_ned
+            imu_msg.orientation.x =  x_ned
+            imu_msg.orientation.y =  y_ned
+            imu_msg.orientation.z =  z_ned           
             ov = 0.05
             imu_msg.orientation_covariance = [
                 ov,  0.0, 0.0,
