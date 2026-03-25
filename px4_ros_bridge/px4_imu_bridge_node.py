@@ -20,7 +20,15 @@ class PX4IMUBridge(Node):
              durability=DurabilityPolicy.VOLATILE,
              depth=10
         )
+        self.declare_parameter('gyro_noise', 0.0150)
+        self.declare_parameter('accel_noise', 0.3500)
+        
 
+        gyro_noise = self.get_parameter('gyro_noise').value
+        accel_noise = self.get_parameter('accel_noise').value
+        self.gyro_var = gyro_noise ** 2    # 0.000225
+        self.accel_var = accel_noise ** 2 
+        
         self.declare_parameter('px4_ns', '')
         self.declare_parameter('vehicle_ns', 'x500_drone_0')
 
@@ -28,7 +36,7 @@ class PX4IMUBridge(Node):
         vehicle_ns = self.get_parameter('vehicle_ns').get_parameter_value().string_value
        
         if px4_ns:
-            px4_topic = '{px4_ns}/fmu/out/sensor_combined'
+            px4_topic = f'{px4_ns}/fmu/out/sensor_combined'
         else:
             px4_topic = '/fmu/out/sensor_combined'
         imu_topic = f'/{vehicle_ns}/imu/data_raw'
@@ -76,17 +84,34 @@ class PX4IMUBridge(Node):
         imu_msg.linear_acceleration.y = -float(msg.accelerometer_m_s2[1])
         imu_msg.linear_acceleration.z = -float(msg.accelerometer_m_s2[2])
         
+        gv = self.gyro_var
+        av = self.accel_var
+
+        imu_msg.angular_velocity_covariance = [
+            gv,  0.0, 0.0,
+            0.0, gv,  0.0,
+            0.0, 0.0, gv
+        ]
+        imu_msg.linear_acceleration_covariance = [
+            av,  0.0, 0.0,
+            0.0, av,  0.0,
+            0.0, 0.0, av
+        ]
+
         if self.latest_attitude is not None:
             q = self.latest_attitude.q
             imu_msg.orientation.w = float(q[0])
             imu_msg.orientation.x = float(q[1])
             imu_msg.orientation.y = float(q[2])
             imu_msg.orientation.z = float(q[3])
-            imu_msg.orientation_covariance[0] = 0.01
-            imu_msg.orientation_covariance[4] = 0.01
-            imu_msg.orientation_covariance[8] = 0.01
+            ov = 0.05
+            imu_msg.orientation_covariance = [
+                ov,  0.0, 0.0,
+                0.0, ov,  0.0,
+                0.0, 0.0, ov
+            ]
         else:
-            imu_msg.orientation_covariance[0] = -1  # marks "no orientation estimate"
+            imu_msg.orientation_covariance[0] = -1.0  # marks "no orientation estimate"
 
         self.pub.publish(imu_msg)
 
